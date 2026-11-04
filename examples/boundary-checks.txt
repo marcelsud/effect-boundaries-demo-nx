@@ -1,0 +1,155 @@
+Folder-boundary verification using the native tools and TypeScript.
+
+$ bunx nx lint @shop/catalog --outputStyle=static
+
+Another team's public/ file still requires the package entry point
+
+> nx run @shop/catalog:lint
+
+> eslint .
+
+
+packages/catalog/src/internal/boundary-probe.service.ts
+  1:1  error  Projects cannot be imported by a relative or absolute path, and must begin with a npm scope  @nx/enforce-module-boundaries
+
+✖ 1 problem (1 error, 0 warnings)
+
+Warning: command "eslint ." exited with non-zero status code
+
+
+ NX   Running target lint for project @shop/catalog failed
+
+Failed tasks:
+
+- @shop/catalog:lint
+
+Hint: run the command with --verbose for more details.
+
+  Run duration:      14.3s
+  Critical path:     14.3s (1 task)
+  Recoverable time:  <1ms
+
+PASS native boundary check rejected the import
+
+$ bunx nx lint @shop/catalog --outputStyle=static
+
+Another team's external/ adapter remains private
+
+> nx run @shop/catalog:lint
+
+> eslint .
+
+
+packages/catalog/src/internal/boundary-probe.service.ts
+  1:1  error  Projects cannot be imported by a relative or absolute path, and must begin with a npm scope  @nx/enforce-module-boundaries
+
+✖ 1 problem (1 error, 0 warnings)
+
+Warning: command "eslint ." exited with non-zero status code
+
+
+ NX   Running target lint for project @shop/catalog failed
+
+Failed tasks:
+
+- @shop/catalog:lint
+
+Hint: run the command with --verbose for more details.
+
+  Run duration:      14.5s
+  Critical path:     14.5s (1 task)
+  Recoverable time:  <1ms
+
+PASS native boundary check rejected the import
+
+Unexported package subpath
+packages/catalog/src/internal/boundary-probe.service.ts(1,29): error TS2307: Cannot find module '@shop/pricing/public/boundary-fixture.view' or its corresponding type declarations.
+
+PASS TypeScript rejected the import
+
+Private repository absent from public exports
+packages/catalog/src/internal/boundary-probe.service.ts(1,10): error TS2305: Module '"@shop/logistics"' has no exported member 'InventoryRepository'.
+
+PASS TypeScript rejected the import
+
+$ git apply examples/public-dependency.patch
+$ bun install
+$ bun run check
+
+$ nx run-many -t build demo --outputStyle=static
+
+ NX   Running targets build, demo for 4 projects and 4 tasks they depend on:
+
+- @shop/logistics
+- @shop/catalog
+- @shop/pricing
+- @shop/demo
+
+
+
+> nx run @shop/pricing:lint
+
+> eslint .
+
+
+> nx run @shop/logistics:lint
+
+> eslint .
+
+
+> nx run @shop/pricing:build
+
+$ tsc -p tsconfig.json
+
+> nx run @shop/catalog:lint
+
+> eslint .
+
+
+> nx run @shop/logistics:build
+
+$ tsc -p tsconfig.json
+
+> nx run @shop/demo:lint
+
+> eslint .
+
+
+> nx run @shop/catalog:build
+
+$ tsc -p tsconfig.json
+
+> nx run @shop/demo:build
+
+$ tsc -p tsconfig.json
+
+> nx run @shop/demo:demo
+
+$ node dist/main.js
+{
+  "id": "p-1",
+  "name": "Keyboard",
+  "availableQuantity": 12,
+  "price": {
+    "amountCents": 19900,
+    "currency": "BRL"
+  }
+}
+PASS Catalog decodes inputs/storage, composes schemas, and round-trips products/errors
+PASS public schemas reject malformed requests, invalid money/currency and invalid quantities
+Trace: Catalog.getProduct [dependency] -> Pricing.getPrice [storage] -> SchemaError
+PASS service-owned application errors preserve operations, stages, stacks and original cause chains
+
+
+
+ NX   Successfully ran targets build, demo for 4 projects and 4 tasks they depend on
+
+
+  Run duration:      34.8s
+  Cache:             0/9 hit (0%)
+  Critical path:     34.6s (6 tasks)
+  Recoverable time:  227ms (1% of the run)
+
+PASS Logistics can consume Pricing's declared public API without changing shared configuration
+
+All temporary fixtures and the public-dependency example were restored.
