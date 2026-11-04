@@ -1,28 +1,31 @@
 {
-  "name": "effect-boundaries-demo",
+  "name": "effect-boundaries-demo-nx",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*",
+    "architecture",
+    "apps/*"
+  ],
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "lint:imports": "node scripts/lint-imports.mjs",
-    "lint:boundaries": "node scripts/check-project-graph.mjs && bun run lint:imports",
-    "build": "bun run lint:boundaries && tsc -b",
-    "demo": "bun run build && node scripts/demo.mjs",
-    "check:boundaries": "bun run build && node scripts/check-boundaries.mjs",
-    "test:lint": "node scripts/test-linter.mjs",
-    "check": "bun run check:boundaries && bun run test:lint && node scripts/demo.mjs",
-    "setup:hooks": "git config core.hooksPath .githooks",
-    "simulate:violation": "bun run build && node scripts/simulate-violation.mjs"
+    "build": "nx run-many -t build --outputStyle=static",
+    "lint": "nx run-many -t lint --outputStyle=static",
+    "check": "nx run-many -t build demo --outputStyle=static",
+    "demo": "nx run @shop/demo:demo --outputStyle=static",
+    "graph": "nx graph",
+    "setup:hooks": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "typescript": "6.0.3",
+    "nx": "24.0.4",
+    "@nx/eslint": "24.0.4",
+    "@nx/eslint-plugin": "24.0.4",
     "eslint": "10.14.0",
-    "eslint-import-resolver-typescript": "4.4.5",
-    "eslint-plugin-boundaries": "7.4.1",
-    "oxlint": "1.91.0",
-    "typescript": "7.0.2"
-  }
+    "@typescript-eslint/parser": "8.72.1"
+  },
+  "packageManager": "bun@1.4.4"
 }
