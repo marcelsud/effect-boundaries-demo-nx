@@ -2,59 +2,92 @@ $ bunx tsc -p packages/catalog --noEmit
 
 PASS TypeScript alone accepts the internally supplied private provider
 
-$ git diff --cached -- packages/catalog/src/internal/Module.ts
+$ git diff --cached -- packages/catalog/src/Catalog.ts
 
-diff --git a/packages/catalog/src/internal/Module.ts b/packages/catalog/src/internal/Module.ts
-index ace8b88..6411261 100644
---- a/packages/catalog/src/internal/Module.ts
-+++ b/packages/catalog/src/internal/Module.ts
-@@ -1,35 +1,21 @@
- import { Effect, Layer } from "effect"
- import { Catalog, ProductUnavailable } from "../Catalog.js"
--import { Logistics } from "@shop/logistics"
--import { Pricing } from "@shop/pricing"
+diff --git a/packages/catalog/src/Catalog.ts b/packages/catalog/src/Catalog.ts
+index 8af7eb1..eb2dbf4 100644
+--- a/packages/catalog/src/Catalog.ts
++++ b/packages/catalog/src/Catalog.ts
+@@ -1,4 +1,8 @@
+ import { Context, Effect, Layer, Schema } from "effect";
++import {
++  PriceRepository,
++  PriceRepositoryLive,
++} from "../../pricing/dist/internal/PriceRepository.js";
+ import { Logistics, Quantity } from "@shop/logistics";
+ import { Pricing, Price } from "@shop/pricing";
  import {
--  ProductRepository, ProductRepositoryLive
--} from "./ProductRepository.js"
-+  PriceRepository, PriceRepositoryLive
-+} from "../../../pricing/dist/internal/PriceRepository.js"
+@@ -37,45 +41,29 @@ export class Catalog extends Context.Service<
+   }
+ >()("@shop/Catalog") {}
 
--// The third type argument is Catalog's allowed external provider requirement.
--export const CatalogModule: Layer.Layer<Catalog, never, Logistics | Pricing> = Layer.effect(
-+export const CatalogModule: Layer.Layer<Catalog> = Layer.effect(
-   Catalog,
-   Effect.gen(function* () {
--    const products = yield* ProductRepository
--    const logistics = yield* Logistics
--    const pricing = yield* Pricing
--
-+    const prices = yield* PriceRepository
-     return {
--      getProduct: (productId) => Effect.gen(function* () {
--        const product = yield* products.find(productId)
--        if (!product) {
--          return yield* Effect.fail(new ProductUnavailable({
--            productId, message: "Product not found"
--          }))
--        }
--        const availableQuantity = yield* logistics.getAvailability(productId)
--        const price = yield* pricing.getPrice(productId).pipe(
--          Effect.mapError((error) => new ProductUnavailable({
--            productId, message: error.message
--          }))
--        )
--        return { ...product, availableQuantity, price }
-+      getProduct: (productId: string) => Effect.gen(function* () {
-+        const price = yield* prices.find(productId)
-+        if (!price) return yield* Effect.fail(new ProductUnavailable({
-+          productId, message: "Price not found"
-+        }))
-+        return { id: productId, name: "Keyboard", availableQuantity: 12, price }
-       })
-     }
-   })
--).pipe(Layer.provide(ProductRepositoryLive))
-+).pipe(Layer.provide(PriceRepositoryLive))
+-// The owning team controls the public Layer and its provider requirements.
+-export const CatalogLive: Layer.Layer<Catalog, never, Logistics | Pricing> =
+-  Layer.effect(
+-    Catalog,
+-    Effect.gen(function* () {
+-      const products = yield* ProductRepository;
+-      const logistics = yield* Logistics;
+-      const pricing = yield* Pricing;
+-      return {
+-        getProduct: (request) =>
+-          Effect.gen(function* () {
+-            const input =
+-              yield* Schema.decodeUnknownEffect(GetProductRequest)(request);
+-            const row = yield* products.find(input.productId);
+-            if (row === undefined) {
+-              return yield* new ProductUnavailable({
+-                productId: input.productId,
+-                message: "Product not found",
+-              });
+-            }
+-            const product =
+-              yield* Schema.decodeUnknownEffect(ProductRecord)(row);
+-            const availableQuantity = yield* logistics.getAvailability(input);
+-            const price = yield* pricing.getPrice(input).pipe(
+-              Effect.mapError((error) =>
+-                error._tag === "PriceUnavailable"
+-                  ? new ProductUnavailable({
+-                      productId: input.productId,
+-                      message: error.message,
+-                    })
+-                  : error,
+-              ),
+-            );
+-            return yield* Schema.decodeUnknownEffect(Product)({
+-              ...product,
+-              availableQuantity,
+-              price,
++export const CatalogLive: Layer.Layer<Catalog> = Layer.effect(
++  Catalog,
++  Effect.gen(function* () {
++    const prices = yield* PriceRepository;
++    return {
++      getProduct: (request) =>
++        Effect.gen(function* () {
++          const { productId } =
++            yield* Schema.decodeUnknownEffect(GetProductRequest)(request);
++          const price = yield* prices.find(productId);
++          if (price === undefined) {
++            return yield* new ProductUnavailable({
++              productId,
++              message: "Price not found",
+             });
+-          }),
+-      };
+-    }),
+-  ).pipe(Layer.provide(ProductRepositoryLive));
++          }
++          return yield* Schema.decodeUnknownEffect(Product)({
++            id: productId,
++            name: "Keyboard",
++            availableQuantity: 12,
++            price,
++          });
++        }),
++    };
++  }),
++).pipe(Layer.provide(PriceRepositoryLive));
 
 $ git commit -m "Read Pricing internals from Catalog"
 
@@ -74,30 +107,30 @@ $ nx run-many -t build demo --outputStyle=static
 > eslint .
 
 
-> nx run @shop/catalog:lint
-
-> eslint .
-
-
-packages/catalog/src/internal/Module.ts
-  3:1  error  Projects cannot be imported by a relative or absolute path, and must begin with a npm scope  @nx/enforce-module-boundaries
-
-✖ 1 problem (1 error, 0 warnings)
-
-Warning: command "eslint ." exited with non-zero status code
-> nx run @shop/logistics:build
-
-$ tsc -p tsconfig.json
-
 > nx run @shop/pricing:lint
 
 > eslint .
 
 
-> nx run @shop/pricing:build  [local cache]
+> nx run @shop/pricing:build
 
 $ tsc -p tsconfig.json
 
+> nx run @shop/logistics:build
+
+$ tsc -p tsconfig.json
+
+> nx run @shop/catalog:lint
+
+> eslint .
+
+
+packages/catalog/src/Catalog.ts
+  2:1  error  Projects cannot be imported by a relative or absolute path, and must begin with a npm scope  @nx/enforce-module-boundaries
+
+✖ 1 problem (1 error, 0 warnings)
+
+Warning: command "eslint ." exited with non-zero status code
 > nx run @shop/demo:lint
 
 > eslint .
@@ -117,10 +150,10 @@ Failed tasks:
 
 - @shop/catalog:lint
 
-  Run duration:      21.0s
-  Cache:             1/5 hit (20%)
-  Critical path:     14.4s (1 task)
-  Recoverable time:  6.6s (31% of the run)
+  Run duration:      23.3s
+  Cache:             0/5 hit (0%)
+  Critical path:     14.2s (1 task)
+  Recoverable time:  9.0s (39% of the run)
 error: script "check" exited with code 1
 
 PASS native nx check rejects the commit (exit 1); HEAD unchanged
