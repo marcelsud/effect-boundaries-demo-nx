@@ -16,10 +16,5 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json"
-  },
-  "nx": {
-    "tags": [
-      "scope:catalog"
-    ]
   }
 }

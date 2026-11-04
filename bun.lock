@@ -24,16 +24,6 @@
         "effect": "4.1.2",
       },
     },
-    "architecture": {
-      "name": "@shop/architecture",
-      "version": "1.0.0",
-      "dependencies": {
-        "@shop/catalog": "*",
-        "@shop/logistics": "*",
-        "@shop/pricing": "*",
-        "effect": "4.1.2",
-      },
-    },
     "packages/catalog": {
       "name": "@shop/catalog",
       "version": "1.0.0",
@@ -342,8 +332,6 @@
     "@nx/workspace": ["@nx/workspace@24.0.4", "", { "dependencies": { "@nx/devkit": "24.0.4", "@zkochan/js-yaml": "0.0.7", "chalk": "^4.1.0", "nx": "24.0.4", "picomatch": "^4.0.7", "semver": "^7.6.3", "tslib": "^2.3.0", "yargs-parser": "21.1.1" } }, "sha512-qspMZJvzPnqGKQz9o1PyvQq8XkJzxGatQR3BTiz7TlgdKPSWx+1Z6S9hAc+k3/LrBtqXOeD0r5NuMEKP5/cP6Q=="],
 
     "@phenomnomnominal/tsquery": ["@phenomnomnominal/tsquery@6.2.0", "", { "dependencies": { "@types/esquery": "^1.5.4", "esquery": "^1.7.0" }, "peerDependencies": { "typescript": ">3.0.0" } }, "sha512-Vo9nkhfZxDB/sBiqIY3pjDC4mOSyure+AFlEW5hcy/tRE82MqCXjRN4InnVNMldinRt0dLYqg4HAU2XPq5e1LA=="],
-
-    "@shop/architecture": ["@shop/architecture@workspace:architecture"],
 
     "@shop/catalog": ["@shop/catalog@workspace:packages/catalog"],
 
