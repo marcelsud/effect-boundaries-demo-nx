@@ -151,10 +151,10 @@ Failed tasks:
 
 - @shop/catalog:lint
 
-  Run duration:      19.9s
+  Run duration:      18.6s
   Cache:             2/5 hit (40%)
-  Critical path:     14.5s (1 task)
-  Recoverable time:  5.3s (27% of the run)
+  Critical path:     13.3s (1 task)
+  Recoverable time:  5.3s (29% of the run)
 error: script "check" exited with code 1
 
 PASS native nx check rejects the commit (exit 1); HEAD unchanged
